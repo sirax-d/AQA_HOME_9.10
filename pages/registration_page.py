@@ -1,12 +1,14 @@
-from selene import have, command
-from selene import browser
+from selene import have, command, be, by, browser
+
+from data import resource
+from data.users import User, admin
 
 
-class RegistrationPage:
+class HighLevelRegistrationPage:
     def __init__(self):
         self.first_name = browser.element('#firstName')
         self.last_name = browser.element('#lastName')
-        self.state = browser.element('#state')
+        self.state = browser.element('#react-select-3-input')
         self.email = browser.element('#userEmail')
         self.gender = browser.all('[name=gender]').element_by(have.value('Female')).element('..')
         self.phone = browser.element('#userNumber')
@@ -15,6 +17,12 @@ class RegistrationPage:
         self.avatar = browser.element('#uploadPicture')
         self.address = browser.element('#currentAddress')
         self.submit = browser.element('#submit')
+        self.city = browser.element('#react-select-4-input')
+        self.user_birthday = browser.element('#dateOfBirthInput')
+        self.month = browser.element('.react-datepicker__month-select')
+        self.year = browser.element('.react-datepicker__year-select')
+        self.day = browser.element(f'.react-datepicker__day--0{admin.dob}')
+
     def open(self):
         browser.open('/automation-practice-form')
         browser.all('[id^=google_ads][id$=container__]').with_(timeout=10).wait_until(
@@ -23,73 +31,38 @@ class RegistrationPage:
         browser.all('[id^=google_ads][id$=container__]').perform(command.js.remove)
         return self
 
-    def fill_first_name(self, value):
-        self.first_name.type(value)
-        return self
-
-    def fill_last_name(self, value):
-        self.last_name.type(value)
-        return self
-
-    def fill_email(self, value):
-        self.email.type(value)
-        return self
-    def fill_gender(self):
-        self.gender().click()
-        return self
-
-    def fill_phone(self, value):
-        self.phone.type(value)
-        return self
-
-    def fill_subjects(self, value):
-        self.subjects.type(value).press_enter()
-        return self
-
-    def fill_hobbies(self):
+    def registration(self, user: User):
+        self.open()
+        self.first_name.should(be.blank).type(user.firstname)
+        self.last_name.should(be.blank).type(user.lastname)
+        self.email.should(be.blank).type(user.email)
+        self.gender.click()
+        self.phone.should(be.blank).type(user.phone)
+        self.user_birthday.click()
+        self.month.click().element(by.text(user.mob)).click()
+        self.year.click().element(by.text(user.yob)).click()
+        self.day.click()
+        self.subjects.type(user.subjects).press_enter()
         self.hobbies.click()
-        return self
-    def fill_date_of_birth(self, year, month, day):
-        browser.element('#dateOfBirthInput').click()
-        browser.element('.react-datepicker__month-select').type(month)
-        browser.element('.react-datepicker__year-select').type(year)
-        browser.element(
-            f'.react-datepicker__day--0{day}:not(.react-datepicker__day--outside-month)'
-        ).click()
-        return self
-
-    def fill_avatar(self, path):
-        self.avatar.set_value(path)
-        return self
-
-    def fill_address(self, value):
-        self.address.type(value)
-        return self
-    def fill_state(self, name):
-        browser.element('#react-select-3-input').type(name).press_enter()
-        return self
-
-    def fill_city(self, name):
-        browser.element('#react-select-4-input').type(name).press_enter()
-        return self
-
-    def fill_submit(self):
+        self.avatar.send_keys(resource.path(user.avatar))
+        self.address.type(user.address)
+        self.state.type(user.state).press_enter()
+        self.city.type(user.city).press_enter()
         self.submit.press_enter()
-        return self
 
-    def should_registered_user_with(self, full_name, email, gender, phone, date_of_birth, subjects, hobbies, avatar, address, state):
+    def should_registered_user_with(self, user):
         browser.element('.table').all('td').even.should(
             have.exact_texts(
-                full_name,
-                email,
-                gender,
-                phone,
-                date_of_birth,
-                subjects,
-                hobbies,
-                avatar,
-                address,
-                state,
+                user.firstname + ' ' + user.lastname,
+                user.email,
+                user.gender,
+                str(user.phone),
+                f'{user.dob} {user.mob},{user.yob}',
+                user.subjects,
+                user.hobbies,
+                user.avatar,
+                user.address,
+                user.state + ' ' + user.city,
             )
         )
         return self
