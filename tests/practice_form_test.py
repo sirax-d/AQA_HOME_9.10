@@ -1,4 +1,4 @@
-from demoqa_tests import resource
+from data import resource
 from pages.registration_page import RegistrationPage
 
 
